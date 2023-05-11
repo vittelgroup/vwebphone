@@ -1,11 +1,30 @@
 {
-  "name": "vwebphone",
+  "name": "@vittelgroup/vwebphone",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vite",
+    "dev:https": "vite \"--port\" \"44394\" \"--https\"",
+    "build": "vue-tsc && vite build --target esnext --out-dir dist",
+    "preview": "vite preview"
   },
+  "dependencies": {
+    "vue": "^3.2.47",
+    "webrtc-adapter": "^7.7.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^4.1.0",
+    "typescript": "^5.0.2",
+    "vite": "^4.3.2",
+    "vite-plugin-mkcert": "^1.15.0",
+    "vue-tsc": "^1.4.2"
+  },
+  "files": [
+    "dist",
+    "src/webphone",
+    "src/lib"
+  ],  
   "keywords": [],
   "author": "",
   "license": "ISC"
