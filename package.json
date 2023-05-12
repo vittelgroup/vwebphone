@@ -4,9 +4,9 @@
   "description": "",
   "main": "dist/index.js",
   "typings": "dist/types/webphone/useWebphone.d.ts",
+  "module": "ESNext",
   "scripts": {
-    "dev": "vite",
-    "dev:https": "vite \"--port\" \"44394\" \"--https\"",
+    "dev": "vite \"--port\" \"54394\" \"--https\"",
     "build": "tsc",
     "preview": "vite preview"
   },

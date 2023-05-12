@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "target": "esnext",
+    "types": ["vite/client"],
     "module": "esnext",
     "strict": true,
     "moduleResolution": "node",
@@ -10,5 +11,6 @@
     "declarationDir": "dist/types",
     "allowJs": true
   },
-  "include": ["src/**/*.ts", "src/lib/janus/**/*.ts", "src/lib/janus/**/*.js"]
+  "include": ["src/**/*.ts", "src/lib/janus/**/*.ts", "src/lib/janus/**/*.js"],
+  "exclude": ["src/example"]
 }

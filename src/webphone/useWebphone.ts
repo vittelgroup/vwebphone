@@ -1,4 +1,4 @@
-import { ref, onMounted, onUnmounted, unref, Ref } from "vue";
+import { ref, onMounted, onUnmounted, unref, Ref, watch } from "vue";
 import Janus from "../lib/janus";
 import type { JanusJS } from "../lib/janus";
 interface WebphoneProps {
@@ -16,6 +16,10 @@ interface WebphoneProps {
   debug?: boolean | "all" | JanusJS.DebugLevel[];
   localStreamElement: Ref<HTMLMediaElement | null>;
   remoteStreamElement: Ref<HTMLMediaElement | null>;
+  iceServers?: RTCIceServer[];
+  withCredentials?: boolean;
+  token?: string;
+  apisecret?: string;
 }
 
 enum JanusStatus {
@@ -52,16 +56,11 @@ interface InCallStatus {
 }
 
 interface InCallProps {
-  inCall: true;
-  status: InCallStatus;
+  inCall: boolean;
+  status?: InCallStatus;
 }
 
-interface NotInCallProps {
-  inCall: false;
-  status?: undefined;
-}
-
-type InCall = InCallProps | NotInCallProps;
+type InCall = InCallProps;
 
 /**
  * Webphone composable for VueJS
@@ -71,7 +70,10 @@ type InCall = InCallProps | NotInCallProps;
  * @returns {Object} - Object with webphone functions and status properties
  */
 export function useWebphone(config: WebphoneProps) {
+  const opaqueId = ref(crypto.randomUUID());
   const error = ref<null | { type: string; msg: string }>(null);
+  const isOnline = ref(window.navigator.onLine);
+  const talkingNumber = ref<null | string>(null);
   const webphone = ref<null | Janus>(null);
   const sip = ref<null | JanusJS.PluginHandle>(null);
   const JSEP = ref<null | JanusJS.JSEP>(null);
@@ -85,6 +87,20 @@ export function useWebphone(config: WebphoneProps) {
       status: undefined,
     }),
   };
+
+  function updateNetworkStatus() {
+    isOnline.value = window.navigator.onLine;
+  }
+
+  onMounted(() => {
+    window.addEventListener("online", updateNetworkStatus);
+    window.addEventListener("offline", updateNetworkStatus);
+  });
+
+  onUnmounted(() => {
+    window.removeEventListener("online", updateNetworkStatus);
+    window.removeEventListener("offline", updateNetworkStatus);
+  });
 
   function hangup() {
     if (
@@ -132,7 +148,7 @@ export function useWebphone(config: WebphoneProps) {
         },
         error(err: any) {
           error.value = {
-            type: "onAsnwer",
+            type: "onAnswer",
             msg: JSON.stringify(err),
           };
           inCallStatus.value = {
@@ -153,8 +169,29 @@ export function useWebphone(config: WebphoneProps) {
     }
   }
 
+  function register() {
+    if (
+      sip.value &&
+      registerStatus.value !== RegisterStatus.REGISTERED &&
+      registerStatus.value !== RegisterStatus.REGISTERING
+    ) {
+      sip.value.send({
+        message: {
+          authuser: janusOptions.extension,
+          request: "register",
+          username: `sip:${janusOptions.extension}@${janusOptions.domain}:${janusOptions.port}`,
+          display_name: janusOptions.name,
+          secret: janusOptions.secret,
+          force_tcp: janusOptions.transport === "tcp",
+          force_udp: janusOptions.transport === "udp",
+          proxy: `sip:${janusOptions.domain}:${janusOptions.port}`,
+        },
+      });
+    }
+  }
   function startCall(dialNumber: string) {
     if (sip.value) {
+      talkingNumber.value = dialNumber;
       sip.value.createOffer({
         media: {
           audioSend: true,
@@ -180,7 +217,36 @@ export function useWebphone(config: WebphoneProps) {
       });
     }
   }
-  onMounted(() => {
+
+  function toggleMute() {
+    if (sip.value && inCallStatus.value.status) {
+      const isMuted = sip.value.isAudioMuted();
+      if (isMuted) {
+        sip.value.unmuteAudio();
+        inCallStatus.value.status.muted = false;
+      } else {
+        sip.value.muteAudio();
+        inCallStatus.value.status.muted = true;
+      }
+    }
+  }
+
+  function toggleHold() {
+    if (sip.value && inCallStatus.value.status) {
+      const request = inCallStatus.value.status.onHold ? "unhold" : "hold";
+      sip.value.send({ message: { request } });
+      inCallStatus.value.status.onHold = request === "hold";
+    }
+  }
+
+  function sendDTMF(dtmfToSend: string) {
+    if (sip.value) {
+      sip.value.dtmf({ dtmf: { tones: dtmfToSend } });
+    }
+  }
+
+  // Initialize Janus
+  function bootstrap() {
     Janus.init({
       debug: janusOptions.debug,
       callback: (): void => {
@@ -193,32 +259,20 @@ export function useWebphone(config: WebphoneProps) {
           janusStatus.value = JanusStatus.ERROR;
           return;
         }
-
         webphone.value = new Janus({
           server: `${janusOptions.janusProtocol}://${janusOptions.janusServer}:${janusOptions.janusPort}${janusOptions.janusEndpoint}`,
+          iceServers: janusOptions.iceServers,
+          withCredentials: janusOptions.withCredentials,
+          token: janusOptions.token,
+          apisecret: janusOptions.apisecret,
           success: () => {
             webphone.value?.attach({
               plugin: "janus.plugin.sip",
-              opaqueId: crypto.randomUUID(),
+              opaqueId: opaqueId.value,
               success: (pluginHandle) => {
                 janusStatus.value = JanusStatus.CONNECTED;
-                if (!sip.value) {
-                  sip.value = pluginHandle;
-                }
-                if (sip.value) {
-                  sip.value.send({
-                    message: {
-                      authuser: janusOptions.extension,
-                      request: "register",
-                      username: `sip:${janusOptions.extension}@${janusOptions.domain}:${janusOptions.port}`,
-                      display_name: janusOptions.name,
-                      secret: janusOptions.secret,
-                      force_tcp: janusOptions.transport === "tcp",
-                      force_udp: janusOptions.transport === "udp",
-                      proxy: `sip:${janusOptions.domain}:${janusOptions.port}`,
-                    },
-                  });
-                }
+                sip.value = pluginHandle;
+                register();
               },
               onmessage: (msg: JanusJS.Message, jsep) => {
                 if (jsep) {
@@ -257,12 +311,7 @@ export function useWebphone(config: WebphoneProps) {
                       break;
                   }
                 } else if (msg.result?.event === "calling") {
-                  const number = msg.result.username
-                    ? msg.result.username.substring(
-                        msg.result.username.lastIndexOf(":") + 1,
-                        msg.result.username.lastIndexOf("@")
-                      )
-                    : "";
+                  const number = talkingNumber.value || "";
                   extenStatus.value = ExtenStatus.CALLING;
                   inCallStatus.value = {
                     inCall: true,
@@ -415,6 +464,7 @@ export function useWebphone(config: WebphoneProps) {
             });
           },
           error: (err: any) => {
+            webphone.value?.destroy();
             janusStatus.value = JanusStatus.ERROR;
             extenStatus.value = ExtenStatus.OFFLINE;
             inCallStatus.value = {
@@ -439,19 +489,45 @@ export function useWebphone(config: WebphoneProps) {
         });
       },
     });
+  }
+
+  onMounted(() => {
+    watch(
+      [isOnline, janusStatus],
+      () => {
+        if (
+          isOnline.value &&
+          janusStatus.value !== JanusStatus.CONNECTED &&
+          janusStatus.value !== JanusStatus.CONNECTING
+        ) {
+          bootstrap();
+        }
+      },
+      { immediate: true }
+    );
+
+    watch(registerStatus, () => {
+      if (registerStatus.value === RegisterStatus.REGISTERED && error.value) {
+        error.value = null;
+      }
+    });
   });
 
   onUnmounted(() => {
-    sip.value?.detach("janus.plugin.sip");
     webphone.value?.destroy();
   });
 
   return {
-    error,
     hangup,
     answer,
     startCall,
     unregister,
+    toggleMute,
+    toggleHold,
+    sendDTMF,
+    register,
+    isOnline,
+    error,
     janusStatus,
     registerStatus,
     extenStatus,
