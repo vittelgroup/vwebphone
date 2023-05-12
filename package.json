@@ -1,8 +1,9 @@
 {
   "name": "@vittelgroup/vwebphone",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "",
   "main": "dist/index.js",
+  "typings": "dist/types/webphone/useWebphone.d.ts",
   "scripts": {
     "dev": "vite",
     "dev:https": "vite \"--port\" \"44394\" \"--https\"",
