@@ -28,7 +28,7 @@ declare namespace JanusJS {
   export interface ConstructorOptions {
     server: string | string[];
     iceServers?: RTCIceServer[];
-    pg?: array;
+    pg?: Array<any>;
     ipv6?: boolean;
     withCredentials?: boolean;
     max_poll_events?: number;
@@ -169,7 +169,7 @@ declare namespace JanusJS {
       from: HTMLMediaElement
     ): void;
 
-    constructor(options: ConstructorOptions): void;
+    constructor(options: ConstructorOptions);
 
     getServer(): string;
 

@@ -1,1 +1,1 @@
-export { useWebphone } from "./webphone";
+export { useWebphone } from "./webphone/useWebphone";

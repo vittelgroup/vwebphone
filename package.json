@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "dev:https": "vite \"--port\" \"44394\" \"--https\"",
-    "build": "vue-tsc && vite build --target esnext --out-dir dist",
+    "build": "tsc",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -24,7 +24,8 @@
   "files": [
     "dist",
     "src/webphone",
-    "src/lib"
+    "src/lib",
+    "src"
   ],
   "keywords": [],
   "author": "",
