@@ -90,10 +90,24 @@ The `useWebphone` composable returns an object with the following properties and
 - `startCall`: Function to initiate a call.
 - `unregister`: Function to unregister from the SIP server.
 - `error`: Error object, if any, with `type` and `msg` properties.
+
+  - `type: "onAnswer"`: Error on answering a call.
+  - `type: "onStartCall"`: Error on initiating a call.
+  - `type: "onJanusInit"`: Error on janus initialization and connection (WSS).
+  - `type: "onProgress"`: Error on active call.
+  - `type: "onUpdatingCall"`: Error on updating a active call.
+  - `type: "onJanusAttach"`: Error on attaching the sip plugin on Janus Library.
+  - `type: "onJanusRunning"`: Error happened when Janus was already running (i.e Lost connection to WSS).
+
 - `janusStatus`: Current status of the Janus connection (NOT_CONNECTED, CONNECTING, CONNECTED, ERROR).
 - `registerStatus`: Current status of the SIP Registration (UNREGISTERED, REGISTRATION_FAILED, REGISTERED, REGISTERING, UNREGISTERING).
 - `extenStatus`: Current status of the registered extension (INCALL, CALLING, IDLE, OFFLINE, RECEIVING_CALL).
 - `inCallStatus`: Current status of the active call.
+- `toggleMute`: Current status of the active call.
+- `toggleHold`: Current status of the active call.
+- `sendDTMF`: Current status of the active call.
+- `register`: Current status of the active call.
+- `isOnline`: Current status of the active call.
 
 ### WebphoneProps
 
