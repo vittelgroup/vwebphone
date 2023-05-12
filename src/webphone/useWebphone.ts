@@ -190,7 +190,7 @@ export function useWebphone(config: WebphoneProps) {
     }
   }
   function startCall(dialNumber: string) {
-    if (sip.value) {
+    if (sip.value && dialNumber !== "") {
       talkingNumber.value = dialNumber;
       sip.value.createOffer({
         media: {

@@ -4,6 +4,31 @@ import { useWebphone } from "../../../webphone/useWebphone";
 
 const localStream = ref<HTMLMediaElement | null>(null);
 const remoteStream = ref<HTMLMediaElement | null>(null);
+const numberToCall = ref("");
+const dtmf = ref("");
+
+const sipStatus = {
+  unregistered: 'Não Registrado',
+  registration_failed: 'Registrou falhou',
+  registered: 'Registrado',
+  registering: 'Registrando...',
+  unregistering: 'Desconectando...',
+}
+
+const wssStatus = {
+  not_connected: 'Desconectado',
+  connecting: 'Conectando...',
+  connected: 'Conectado',
+  error: 'ERRO',
+}
+
+const ramalStatus = {
+  incall: 'Em Chamada',
+  calling: 'Chamando...',
+  idle: 'Livre',
+  offline: 'Desconectado',
+  incomingcall: 'Recebendo Chamada',
+}
 
 defineProps<{ msg: string }>()
 
@@ -40,33 +65,86 @@ console.log({ registerStatus, janusStatus, extenStatus, inCallStatus });
 </script>
 
 <template>
-  <h1>{{ msg }}</h1>
-  <h4>JANUS: {{ janusStatus }}</h4>
-  <h4>EXTENSION REGISTER: {{ registerStatus }}</h4>
-  <h4>EXTENSION: {{ extenStatus }}</h4>
-  <h4>NUMBER: {{ inCallStatus.status?.number }}</h4>
-  <h4>InCall? {{ inCallStatus.inCall ? 'YES' : 'NO' }}</h4>
-  <h4>ERROR: {{ error?.msg }}</h4>
+  <div class="overflow-hidden rounded-lg bg-white shadow">
+    <h2 class="sr-only" id="profile-overview-title">Profile Overview</h2>
+    <div class="p-6 transition-all ease-in-out border border-white"
+      :class="{ 'bg-green-400': inCallStatus.inCall, 'bg-white': !inCallStatus.inCall }">
+      <div class="sm:flex sm:items-center sm:justify-between">
+        <div class="sm:flex sm:space-x-5">
+          <div class="flex-shrink-0">
+            <img class="mx-auto h-20 w-20 rounded-full"
+              src="https://api.dicebear.com/6.x/lorelei/svg?flip=false&seed=asdasd"
+              alt="draw of a person in black and white" />
+          </div>
+          <div class="mt-4 text-center sm:mt-0 sm:pt-1 sm:text-left">
+            <p class="text-sm font-medium text-gray-600">4010</p>
+            <p class="text-xl font-bold text-gray-900 sm:text-2xl">4010 - Teste</p>
+            <p class="text-sm font-medium text-gray-600">
+              vcm.vcmpbx.com.br</p>
+          </div>
+        </div>
 
-  <div class="card">
-    <button type="button" @click="answer" :disabled="extenStatus !== 'incomingcall'">Answer</button>
-    <button type="button" @click="hangup" :disabled="!inCallStatus.inCall">Hangup</button>
-    <button type="button" @click="toggleMute" :disabled="!inCallStatus.inCall">Toggle Mute</button>
-    <button type="button" @click="toggleHold" :disabled="!inCallStatus.inCall">Toggle Hold</button>
-    <button type="button" @click="sendDTMF('*2')" :disabled="!inCallStatus.inCall">Send DTMF</button>
-    <button type="button" @click="unregister" :disabled="registerStatus !== 'registered'">Unregister</button>
-    <button type="button" @click="register"
-      :disabled="registerStatus === 'registered' || registerStatus === 'registering'">Register</button>
-    <button type="button" @click="startCall('011992242283')" :disabled="inCallStatus.inCall">Call 11992242283</button>
+      </div>
+    </div>
+    <div
+      class="mt-5 flex justify-start flex-row sm:mt-0 space-x-1 divide-y divide-gray-200 border-t border-gray-200 py-2 px-2">
+      <button type="button" class="incall-button" :disabled="inCallStatus.inCall || numberToCall === ''"
+        @click="startCall(numberToCall)">Ligar</button>
+      <input type="text" placeholder="5511995653232" class="rounded-md px-2 w-52" v-model="numberToCall" />
+      <button type="button" class="incall-button" :disabled="!inCallStatus.inCall || dtmf === ''"
+        @click="() => { sendDTMF(dtmf); dtmf = ''; }">DTMF</button>
+      <input type="text" placeholder="*2" class="rounded-md px-2 w-52" v-model="dtmf" :disabled="!inCallStatus.inCall" />
+    </div>
+    <div
+      class="mt-5 flex justify-center flex-row sm:mt-0 space-x-1 divide-y divide-gray-200 border-t border-gray-200 py-2">
+      <button type="button" class="action-button" :disabled="!inCallStatus.inCall" @click="hangup">Desligar</button>
+      <button type="button" class="action-button" :disabled="extenStatus !== 'incomingcall'"
+        @click="answer">Atender</button>
+      <button type="button" class="action-button" :disabled="!inCallStatus.inCall" @click="toggleMute">Mudo</button>
+      <button type="button" class="action-button" :disabled="!inCallStatus.inCall" @click="toggleHold">Espera</button>
+    </div>
+    <div
+      class="grid grid-cols-1 divide-y divide-gray-200 border-t border-gray-200 bg-gray-50 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+      <div class="px-6 py-5 text-center text-sm font-medium">
+        <span class="text-gray-600">SIP</span>
+        {{ ' ' }}
+        <span
+          :class="{ 'text-green-700': registerStatus === 'registered', 'text-gray-600': registerStatus !== 'registered' }">{{
+            sipStatus[registerStatus] || 'Não Registrado' }}</span>
 
-    <audio ref="localStream" style="display: none" playsinline autoplay muted></audio>
-    <audio ref="remoteStream" style="display: none" playsinline autoplay></audio>
+      </div>
+      <div class="px-6 py-5 text-center text-sm font-medium">
+        <span class="text-gray-600">WSS</span>
+        {{ ' ' }}
+        <span :class="{ 'text-green-700': janusStatus === 'connected', 'text-gray-600': janusStatus !== 'connected' }">{{
+          wssStatus[janusStatus] || 'Desconectado' }}</span>
 
+      </div>
+      <div class="px-6 py-5 text-center text-sm font-medium">
+        <span class="text-gray-600">Ramal</span>
+        {{ ' ' }}
+        <span :class="{ 'text-green-700': extenStatus !== 'offline', 'text-gray-600': extenStatus === 'offline' }">{{
+          ramalStatus[extenStatus] || 'Desconectado' }}</span>
+
+      </div>
+    </div>
+    <div
+      class="mt-5 flex justify-start flex-row sm:mt-0 px-2 space-x-1divide-gray-200 border-t border-gray-200 py-2 bg-red-500"
+      v-show="error !== null">
+      <span class="text-gray-900 font-bold">{{ error?.type }}</span>
+      {{ ' ' }}
+      <span class="text-gray-900">{{ error?.msg }}</span>
+    </div>
   </div>
 
   <p class="read-the-docs">This is an example for using a Webphone with <a
       href="https://janus.conf.meetecho.com/">Janus</a> <a href="https://digital.vittel.com.br/produtos/"
       target="_blank">@Vittel</a></p>
+
+  <audio class="rounded centered" ref="localStream" width="320" height="240" autoplay playsinline muted
+    style="display: none"></audio>
+  <audio class="rounded centered" ref="remoteStream" width="320" height="240" autoplay playsinline
+    style="display: none"></audio>
 </template>
 
 <style scoped>
