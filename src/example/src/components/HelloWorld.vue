@@ -65,7 +65,7 @@ console.log({ registerStatus, janusStatus, extenStatus, inCallStatus });
 </script>
 
 <template>
-  <div class="overflow-hidden rounded-lg bg-white shadow">
+  <div class="overflow-hidden rounded-lg bg-white shadow w-[600px]">
     <h2 class="sr-only" id="profile-overview-title">Profile Overview</h2>
     <div class="p-6 transition-all ease-in-out border border-white"
       :class="{ 'bg-green-400': inCallStatus.inCall, 'bg-white': !inCallStatus.inCall }">
@@ -87,7 +87,7 @@ console.log({ registerStatus, janusStatus, extenStatus, inCallStatus });
       </div>
     </div>
     <div
-      class="mt-5 flex justify-start flex-row sm:mt-0 space-x-1 divide-y divide-gray-200 border-t border-gray-200 py-2 px-2">
+      class="mt-5 flex justify-center flex-row sm:mt-0 space-x-1 divide-y divide-gray-200 border-t border-gray-200 py-2 px-2">
       <button type="button" class="incall-button" :disabled="inCallStatus.inCall || numberToCall === ''"
         @click="startCall(numberToCall)">Ligar</button>
       <input type="text" placeholder="5511995653232" class="rounded-md px-2 w-52" v-model="numberToCall" />
@@ -137,9 +137,10 @@ console.log({ registerStatus, janusStatus, extenStatus, inCallStatus });
     </div>
   </div>
 
-  <p class="read-the-docs">This is an example for using a Webphone with <a
-      href="https://janus.conf.meetecho.com/">Janus</a> <a href="https://digital.vittel.com.br/produtos/"
-      target="_blank">@Vittel</a></p>
+  <p class="read-the-docs">This is an example using a Webphone with <a href="https://janus.conf.meetecho.com/">Janus</a>
+    {{ ' ' }}
+    <a href="https://digital.vittel.com.br/produtos/" target="_blank">@Vittel</a>
+  </p>
 
   <audio class="rounded centered" ref="localStream" width="320" height="240" autoplay playsinline muted
     style="display: none"></audio>
