@@ -66,7 +66,6 @@ console.log({ registerStatus, janusStatus, extenStatus, inCallStatus });
 
 <template>
   <div class="overflow-hidden rounded-lg bg-white shadow w-[600px]">
-    <h2 class="sr-only" id="profile-overview-title">Profile Overview</h2>
     <div class="p-6 transition-all ease-in-out border border-white"
       :class="{ 'bg-green-400': inCallStatus.inCall, 'bg-white': !inCallStatus.inCall }">
       <div class="sm:flex sm:items-center sm:justify-between">
