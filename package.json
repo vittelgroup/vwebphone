@@ -1,6 +1,6 @@
 {
   "name": "@vittelgroup/vwebphone",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "",
   "main": "dist/index.js",
   "typings": "dist/types/webphone/useWebphone.d.ts",
@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "vite \"--port\" \"54394\" \"--https\"",
     "build": "tsc",
+    "build:publish": "tsc && pnpm publish --access restricted",
     "preview": "vite preview"
   },
   "dependencies": {
