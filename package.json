@@ -1,10 +1,10 @@
 {
   "name": "@vittelgroup/vwebphone",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "",
   "main": "dist/index.js",
   "typings": "dist/types/webphone/useWebphone.d.ts",
-  "module": "ESNext",
+  "module": "dist/index.js",
   "scripts": {
     "dev": "vite \"--port\" \"54394\" \"--https\"",
     "build": "tsc",
