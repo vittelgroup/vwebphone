@@ -3,15 +3,9 @@ import Janus from "../lib/janus";
 import type { JanusJS } from "../lib/janus";
 interface WebphoneProps {
   janusServer: string;
-  name: string;
-  domain: string;
-  extension: string;
-  secret: string;
-  port: number;
   janusPort: number;
   janusEndpoint: string;
   janusProtocol: string;
-  transport: "udp" | "tcp";
   proxy?: string;
   debug?: boolean | "all" | JanusJS.DebugLevel[];
   localStreamElement: Ref<HTMLMediaElement | null>;
@@ -76,6 +70,11 @@ export function useWebphone(config: WebphoneProps) {
   const talkingNumber = ref<null | string>(null);
   const webphone = ref<null | Janus>(null);
   const sip = ref<null | JanusJS.PluginHandle>(null);
+
+  const authenticatedExtension = ref<null | string>(null);
+  const authenticatedDomain = ref<null | string>(null);
+  const authenticatedPort = ref<null | number>(null);
+
   const JSEP = ref<null | JanusJS.JSEP>(null);
   const janusOptions = unref(config);
   const { janusStatus, registerStatus, extenStatus, inCallStatus } = {
@@ -138,7 +137,7 @@ export function useWebphone(config: WebphoneProps) {
           const body = {
             request: "accept",
             headers: {
-              Contact: `<sip:${janusOptions.extension}@${janusOptions.janusServer}>`,
+              Contact: `<sip:${authenticatedExtension}@${janusOptions.janusServer}>`,
             },
           };
           sip.value?.send({
@@ -169,7 +168,21 @@ export function useWebphone(config: WebphoneProps) {
     }
   }
 
-  function register() {
+  function register({
+    authuser,
+    secret,
+    domain,
+    port,
+    name,
+    transport,
+  }: {
+    authuser: string;
+    secret: string;
+    domain: string;
+    port: number;
+    name: string;
+    transport: "udp" | "tcp";
+  }) {
     if (
       sip.value &&
       registerStatus.value !== RegisterStatus.REGISTERED &&
@@ -177,16 +190,19 @@ export function useWebphone(config: WebphoneProps) {
     ) {
       sip.value.send({
         message: {
-          authuser: janusOptions.extension,
+          authuser,
           request: "register",
-          username: `sip:${janusOptions.extension}@${janusOptions.domain}:${janusOptions.port}`,
-          display_name: janusOptions.name,
-          secret: janusOptions.secret,
-          force_tcp: janusOptions.transport === "tcp",
-          force_udp: janusOptions.transport === "udp",
-          proxy: `sip:${janusOptions.domain}:${janusOptions.port}`,
+          username: `sip:${authuser}@${domain}:${port}`,
+          display_name: name,
+          secret: secret,
+          force_tcp: transport === "tcp",
+          force_udp: transport === "udp",
+          proxy: `sip:${domain}:${port}`,
         },
       });
+      authenticatedExtension.value = authuser;
+      authenticatedDomain.value = domain;
+      authenticatedPort.value = port;
     }
   }
   function startCall(dialNumber: string) {
@@ -203,7 +219,7 @@ export function useWebphone(config: WebphoneProps) {
           console.log("Got SDP on creating!");
           const body = {
             request: "call",
-            uri: `sip:${dialNumber}@${janusOptions.domain}:${janusOptions.port}`,
+            uri: `sip:${dialNumber}@${authenticatedDomain}:${authenticatedPort}`,
           };
           sip.value?.send({ message: body, jsep: newJsep });
         },
@@ -272,7 +288,6 @@ export function useWebphone(config: WebphoneProps) {
               success: (pluginHandle) => {
                 janusStatus.value = JanusStatus.CONNECTED;
                 sip.value = pluginHandle;
-                register();
               },
               onmessage: (msg: JanusJS.Message, jsep) => {
                 if (jsep) {

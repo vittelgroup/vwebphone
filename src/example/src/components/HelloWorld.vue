@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Ref, ref } from 'vue'
+import { Ref, onMounted, ref, watch } from 'vue'
 import { useWebphone } from "../../../webphone/useWebphone";
 
 const localStream = ref<HTMLMediaElement | null>(null);
@@ -45,22 +45,28 @@ const { hangup,
   registerStatus,
   extenStatus,
   inCallStatus, } = useWebphone({
-    domain: import.meta.env.VITE_SIP_DOMAIN,
-    extension: import.meta.env.VITE_SIP_EXTENSION,
-    secret: import.meta.env.VITE_SIP_SECRET,
-    port: parseInt(import.meta.env.VITE_SIP_PORT),
-    name: '4010 - Teste',
     janusServer: import.meta.env.VITE_JANUS_HOST,
     janusPort: parseInt(import.meta.env.VITE_JANUS_PORT),
     janusEndpoint: '/janus',
     janusProtocol: 'wss',
-    transport: 'udp',
     debug: 'all',
     localStreamElement: localStream as Ref<HTMLMediaElement>,
     remoteStreamElement: remoteStream as Ref<HTMLMediaElement>
   });
 
-console.log({ registerStatus, janusStatus, extenStatus, inCallStatus });
+watch(janusStatus, () => {
+  if (janusStatus.value === 'connected') {
+    register({
+      authuser: import.meta.env.VITE_SIP_EXTENSION,
+      domain: import.meta.env.VITE_SIP_DOMAIN,
+      secret: import.meta.env.VITE_SIP_SECRET,
+      port: parseInt(import.meta.env.VITE_SIP_PORT),
+      name: '4010 - Teste',
+      transport: 'udp',
+    });
+  }
+});
+
 
 </script>
 

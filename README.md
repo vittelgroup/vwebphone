@@ -49,16 +49,10 @@ const { hangup,
   registerStatus,
   extenStatus,
   inCallStatus, } = useWebphone({
-    domain: 'sip.domain.com',
-    extension: '200',
-    secret: 'secret@200#',
-    port: 5060,
-    name: '200 - Example',
     janusServer: 'janus.server.com',
     janusPort: 8189,
     janusEndpoint: '/janus',
     janusProtocol: 'wss',
-    transport: 'udp',
     debug: 'all',
     localStreamElement: localStream,
     remoteStreamElement: remoteStream
@@ -103,11 +97,28 @@ The `useWebphone` composable returns an object with the following properties and
 - `registerStatus`: Current status of the SIP Registration (UNREGISTERED, REGISTRATION_FAILED, REGISTERED, REGISTERING, UNREGISTERING).
 - `extenStatus`: Current status of the registered extension (INCALL, CALLING, IDLE, OFFLINE, RECEIVING_CALL).
 - `inCallStatus`: Current status of the active call.
-- `toggleMute`: Current status of the active call.
-- `toggleHold`: Current status of the active call.
-- `sendDTMF`: Current status of the active call.
-- `register`: Current status of the active call.
-- `isOnline`: Current status of the active call.
+- `toggleMute`: Mute/unmute call.
+- `toggleHold`: Hold/unhold call.
+- `sendDTMF`: Send DTMF commands.
+- `register`: register a user/extension.
+
+```typescript
+// Should send a register only when the Janus WSS is connected
+watch(janusStatus, () => {
+  if (janusStatus.value === "connected") {
+    register({
+      authuser: "200",
+      domain: "sip.domain.com",
+      secret: "secret@200#",
+      port: 5060,
+      name: "4010 - Teste",
+      transport: "udp",
+    });
+  }
+});
+```
+
+- `isOnline`: If has internet.
 
 ### WebphoneProps
 
