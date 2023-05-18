@@ -137,7 +137,7 @@ export function useWebphone(config: WebphoneProps) {
           const body = {
             request: "accept",
             headers: {
-              Contact: `<sip:${authenticatedExtension}@${janusOptions.janusServer}>`,
+              Contact: `<sip:${authenticatedExtension.value}@${janusOptions.janusServer}>`,
             },
           };
           sip.value?.send({
@@ -219,7 +219,7 @@ export function useWebphone(config: WebphoneProps) {
           console.log("Got SDP on creating!");
           const body = {
             request: "call",
-            uri: `sip:${dialNumber}@${authenticatedDomain}:${authenticatedPort}`,
+            uri: `sip:${dialNumber}@${authenticatedDomain.value}:${authenticatedPort.value}`,
           };
           sip.value?.send({ message: body, jsep: newJsep });
         },
