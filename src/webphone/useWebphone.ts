@@ -165,6 +165,7 @@ export function useWebphone(config: WebphoneProps) {
   function unregister() {
     if (sip.value) {
       sip.value.send({ message: { request: "unregister" } });
+      bootstrap();
     }
   }
 
@@ -265,6 +266,11 @@ export function useWebphone(config: WebphoneProps) {
   function bootstrap() {
     if (webphone.value) {
       webphone.value.destroy();
+    }
+    if (sip.value) {
+      sip.value.detach(() => {
+        console.warn("detach");
+      });
     }
     Janus.init({
       debug: janusOptions.debug,
