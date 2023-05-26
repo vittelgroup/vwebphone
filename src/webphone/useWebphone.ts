@@ -263,6 +263,9 @@ export function useWebphone(config: WebphoneProps) {
 
   // Initialize Janus
   function bootstrap() {
+    if (webphone.value) {
+      webphone.value.destroy();
+    }
     Janus.init({
       debug: janusOptions.debug,
       callback: (): void => {
@@ -310,18 +313,21 @@ export function useWebphone(config: WebphoneProps) {
                       registerStatus.value = RegisterStatus.REGISTERED;
                       break;
                     case "registration_failed":
+                      extenStatus.value = ExtenStatus.OFFLINE;
                       registerStatus.value = RegisterStatus.REGISTRATION_FAILED;
                       break;
                     case "unregistered":
+                      extenStatus.value = ExtenStatus.OFFLINE;
                       registerStatus.value = RegisterStatus.UNREGISTERED;
                       break;
                     case "unregistering":
                       registerStatus.value = RegisterStatus.UNREGISTERING;
                       break;
                     case "registering":
-                      registerStatus.value = RegisterStatus.REGISTRATION_FAILED;
+                      registerStatus.value = RegisterStatus.REGISTERING;
                       break;
                     default:
+                      extenStatus.value = ExtenStatus.OFFLINE;
                       registerStatus.value = RegisterStatus.UNREGISTERED;
                       break;
                   }
