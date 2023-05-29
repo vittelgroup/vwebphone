@@ -1,4 +1,12 @@
-import { ref, onMounted, onUnmounted, unref, Ref, watch } from "vue";
+import {
+  ref,
+  onMounted,
+  onUnmounted,
+  unref,
+  Ref,
+  watch,
+  watchEffect,
+} from "vue";
 import Janus from "../lib/janus";
 import type { JanusJS } from "../lib/janus";
 interface WebphoneProps {
@@ -14,6 +22,7 @@ interface WebphoneProps {
   withCredentials?: boolean;
   token?: string;
   apisecret?: string;
+  registerTimeout: number;
 }
 
 enum JanusStatus {
@@ -70,6 +79,8 @@ export function useWebphone(config: WebphoneProps) {
   const talkingNumber = ref<null | string>(null);
   const webphone = ref<null | Janus>(null);
   const sip = ref<null | JanusJS.PluginHandle>(null);
+  const registerTimer = ref(0);
+  const registerTimerId = ref(0);
 
   const authenticatedExtension = ref<null | string>(null);
   const authenticatedDomain = ref<null | string>(null);
@@ -165,10 +176,21 @@ export function useWebphone(config: WebphoneProps) {
   function unregister() {
     if (sip.value) {
       sip.value.send({ message: { request: "unregister" } });
-      bootstrap();
     }
   }
 
+  function registerTimerStart() {
+    if (
+      [RegisterStatus.UNREGISTERED, RegisterStatus.REGISTERING].includes(
+        registerStatus.value
+      )
+    ) {
+      registerTimerId.value = setTimeout(() => {
+        registerTimer.value = registerTimer.value + 1;
+        registerTimerStart();
+      }, 1000);
+    }
+  }
   function register({
     authuser,
     secret,
@@ -187,7 +209,8 @@ export function useWebphone(config: WebphoneProps) {
     if (
       sip.value &&
       registerStatus.value !== RegisterStatus.REGISTERED &&
-      registerStatus.value !== RegisterStatus.REGISTERING
+      registerStatus.value !== RegisterStatus.REGISTERING &&
+      registerTimer.value <= 0
     ) {
       sip.value.send({
         message: {
@@ -201,9 +224,12 @@ export function useWebphone(config: WebphoneProps) {
           proxy: `sip:${domain}:${port}`,
         },
       });
+      registerTimerStart();
       authenticatedExtension.value = authuser;
       authenticatedDomain.value = domain;
       authenticatedPort.value = port;
+    } else if (registerTimer.value >= 0) {
+      registerTimer.value = 0;
     }
   }
   function startCall(dialNumber: string) {
@@ -267,11 +293,6 @@ export function useWebphone(config: WebphoneProps) {
     if (webphone.value) {
       webphone.value.destroy();
     }
-    if (sip.value) {
-      sip.value.detach(() => {
-        console.warn("detach");
-      });
-    }
     Janus.init({
       debug: janusOptions.debug,
       callback: (): void => {
@@ -317,14 +338,17 @@ export function useWebphone(config: WebphoneProps) {
                     case "registered":
                       extenStatus.value = ExtenStatus.IDLE;
                       registerStatus.value = RegisterStatus.REGISTERED;
+                      registerTimer.value = 0;
                       break;
                     case "registration_failed":
                       extenStatus.value = ExtenStatus.OFFLINE;
                       registerStatus.value = RegisterStatus.REGISTRATION_FAILED;
+                      registerTimer.value = 0;
                       break;
                     case "unregistered":
                       extenStatus.value = ExtenStatus.OFFLINE;
                       registerStatus.value = RegisterStatus.UNREGISTERED;
+                      registerTimer.value = 0;
                       break;
                     case "unregistering":
                       registerStatus.value = RegisterStatus.UNREGISTERING;
@@ -511,7 +535,9 @@ export function useWebphone(config: WebphoneProps) {
               inCall: false,
               status: undefined,
             };
-            registerStatus.value = RegisterStatus.UNREGISTERED;
+            if (registerStatus.value !== RegisterStatus.REGISTRATION_FAILED) {
+              registerStatus.value = RegisterStatus.UNREGISTERED;
+            }
           },
         });
       },
@@ -538,10 +564,20 @@ export function useWebphone(config: WebphoneProps) {
         error.value = null;
       }
     });
+
+    watchEffect(() => {
+      if (registerTimer.value >= janusOptions.registerTimeout) {
+        clearTimeout(registerTimerId.value);
+        registerStatus.value = RegisterStatus.REGISTRATION_FAILED;
+        webphone.value?.destroy();
+      }
+    });
   });
 
   onUnmounted(() => {
     webphone.value?.destroy();
+    registerTimer.value = 0;
+    clearTimeout(registerTimerId.value);
   });
 
   return {

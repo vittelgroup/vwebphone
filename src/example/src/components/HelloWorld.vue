@@ -51,7 +51,8 @@ const { hangup,
     janusProtocol: 'wss',
     debug: 'all',
     localStreamElement: localStream as Ref<HTMLMediaElement>,
-    remoteStreamElement: remoteStream as Ref<HTMLMediaElement>
+    remoteStreamElement: remoteStream as Ref<HTMLMediaElement>,
+    registerTimeout: 10,
   });
 
 watch(janusStatus, () => {
