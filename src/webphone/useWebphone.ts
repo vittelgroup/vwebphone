@@ -187,10 +187,17 @@ export function useWebphone(config: WebphoneProps) {
   }
 
   function registerTimerStart() {
+    wpDebug().log(
+      "[WEBPHONE]:Function registerTimerStart() called",
+      registerStatus.value,
+      registerTimer.value
+    );
     if (
-      [RegisterStatus.UNREGISTERED, RegisterStatus.REGISTERING].includes(
-        registerStatus.value
-      )
+      [
+        RegisterStatus.UNREGISTERED,
+        RegisterStatus.REGISTERING,
+        RegisterStatus.REGISTRATION_FAILED,
+      ].includes(registerStatus.value)
     ) {
       registerTimerId.value = setTimeout(() => {
         registerTimer.value = registerTimer.value + 1;
