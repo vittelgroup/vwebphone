@@ -15,7 +15,7 @@ interface WebphoneProps {
   janusEndpoint: string;
   janusProtocol: string;
   proxy?: string;
-  debug?: boolean | "all" | JanusJS.DebugLevel[];
+  debug?: boolean | "all" | JanusJS.DebugLevel[] | "minimal";
   localStreamElement: Ref<HTMLMediaElement | null>;
   remoteStreamElement: Ref<HTMLMediaElement | null>;
   iceServers?: RTCIceServer[];
@@ -98,6 +98,14 @@ export function useWebphone(config: WebphoneProps) {
     }),
   };
 
+  function wpDebug(): Console {
+    const noop = new Proxy({}, { get: () => () => void 0 });
+
+    return janusOptions.debug === true || janusOptions.debug === "minimal"
+      ? console
+      : (noop as Console);
+  }
+
   function updateNetworkStatus() {
     isOnline.value = window.navigator.onLine;
   }
@@ -157,10 +165,7 @@ export function useWebphone(config: WebphoneProps) {
           });
         },
         error(err: any) {
-          error.value = {
-            type: "onAnswer",
-            msg: JSON.stringify(err),
-          };
+          wpDebug().error("[WEBPHONE]:answer():", JSON.stringify(err));
           inCallStatus.value = {
             inCall: false,
             status: undefined,
@@ -170,11 +175,13 @@ export function useWebphone(config: WebphoneProps) {
           sip.value?.send({ message: body });
         },
       });
+      wpDebug().log("[WEBPHONE]:Function answer() called");
     }
   }
 
   function unregister() {
     if (sip.value) {
+      wpDebug().log("[WEBPHONE]:Function unregister() called");
       sip.value.send({ message: { request: "unregister" } });
     }
   }
@@ -228,12 +235,16 @@ export function useWebphone(config: WebphoneProps) {
       authenticatedExtension.value = authuser;
       authenticatedDomain.value = domain;
       authenticatedPort.value = port;
+      wpDebug().log(
+        `[WEBPHONE]:Function register() called 'sip:${authuser}@${domain}:${port}'`
+      );
     } else if (registerTimer.value >= 0) {
       registerTimer.value = 0;
     }
   }
   function startCall(dialNumber: string) {
     if (sip.value && dialNumber !== "") {
+      wpDebug().log(`[WEBPHONE]:Function startCall(${dialNumber}) called`);
       talkingNumber.value = dialNumber;
       sip.value.createOffer({
         media: {
@@ -243,7 +254,7 @@ export function useWebphone(config: WebphoneProps) {
           videoRecv: false,
         },
         success(newJsep: JanusJS.JSEP) {
-          console.log("Got SDP on creating!");
+          wpDebug().log("[WEBPHONE]:Got SDP on creating!");
           const body = {
             request: "call",
             uri: `sip:${dialNumber}@${authenticatedDomain.value}:${authenticatedPort.value}`,
@@ -251,10 +262,10 @@ export function useWebphone(config: WebphoneProps) {
           sip.value?.send({ message: body, jsep: newJsep });
         },
         error(err: any) {
-          error.value = {
-            type: "onStartCall",
-            msg: JSON.stringify(err),
-          };
+          wpDebug().error(
+            `[WEBPHONE]:Function startCall(${dialNumber})`,
+            JSON.stringify(err)
+          );
           Janus.error("WebRTC error...", error);
         },
       });
@@ -271,6 +282,11 @@ export function useWebphone(config: WebphoneProps) {
         sip.value.muteAudio();
         inCallStatus.value.status.muted = true;
       }
+      wpDebug().log(
+        `[WEBPHONE]:Function toggleMute() called '${
+          isMuted ? "MUTED" : "UNMUTED"
+        }'`
+      );
     }
   }
 
@@ -279,11 +295,13 @@ export function useWebphone(config: WebphoneProps) {
       const request = inCallStatus.value.status.onHold ? "unhold" : "hold";
       sip.value.send({ message: { request } });
       inCallStatus.value.status.onHold = request === "hold";
+      wpDebug().log(`[WEBPHONE]:Function toggleHold() called '${request}'`);
     }
   }
 
   function sendDTMF(dtmfToSend: string) {
     if (sip.value) {
+      wpDebug().log(`[WEBPHONE]:Function sendDTMF(${dtmfToSend}) called`);
       sip.value.dtmf({ dtmf: { tones: dtmfToSend } });
     }
   }
@@ -293,15 +311,15 @@ export function useWebphone(config: WebphoneProps) {
     if (webphone.value) {
       webphone.value.destroy();
     }
+    wpDebug().log(`[WEBPHONE]:Function bootstrap() called`);
     Janus.init({
-      debug: janusOptions.debug,
+      debug: janusOptions.debug === "minimal" ? false : janusOptions.debug,
       callback: (): void => {
         janusStatus.value = JanusStatus.CONNECTING;
         if (!Janus.isWebrtcSupported()) {
-          error.value = {
-            type: "onJanusInit",
-            msg: "WebRTC not supported",
-          };
+          wpDebug().error(
+            `[WEBPHONE]:Function bootstrap(): WebRTC not supported!`
+          );
           janusStatus.value = JanusStatus.ERROR;
           return;
         }
@@ -318,11 +336,18 @@ export function useWebphone(config: WebphoneProps) {
               success: (pluginHandle) => {
                 janusStatus.value = JanusStatus.CONNECTED;
                 sip.value = pluginHandle;
+                wpDebug().log(
+                  `[WEBPHONE]:Function bootstrap(): JANUS Connected successfully!`
+                );
               },
               onmessage: (msg: JanusJS.Message, jsep) => {
                 if (jsep) {
                   JSEP.value = jsep;
                 }
+                wpDebug().log(
+                  `[WEBPHONE]:Function bootstrap(): Message received from Janus:`,
+                  msg?.result?.event
+                );
                 if (
                   msg.result &&
                   msg.result.event &&
@@ -403,7 +428,7 @@ export function useWebphone(config: WebphoneProps) {
                     jsep !== undefined &&
                     sip.value !== null
                   ) {
-                    console.log("PROGRESS", jsep, sip.value);
+                    wpDebug().log("[WEBPHONE]:PROGRESS", jsep, sip.value);
                     sip.value.handleRemoteJsep({
                       jsep,
                       error: (err: any) => {
@@ -429,7 +454,6 @@ export function useWebphone(config: WebphoneProps) {
                   }
                 } else if (msg.result?.event === "updatingcall") {
                   extenStatus.value = ExtenStatus.INCALL;
-                  console.log("UPDATINGCALL", jsep, sip.value);
 
                   const hasAudio = jsep
                     ? jsep.sdp.indexOf("m=audio") > -1
@@ -441,8 +465,8 @@ export function useWebphone(config: WebphoneProps) {
                     jsep,
                     media: { audio: hasAudio, video: hasVideo },
                     success(jsep2: { type: any }) {
-                      console.log(
-                        `Got SDP ${String(
+                      wpDebug().log(
+                        `[WEBPHONE]:Got SDP ${String(
                           jsep2.type
                         )}! audio=${hasAudio}, video=${hasVideo}`
                       );
@@ -450,16 +474,13 @@ export function useWebphone(config: WebphoneProps) {
                       sip.value?.send({ message: body, jsep });
                     },
                     error(err: any) {
-                      error.value = {
-                        type: "onUpdatingCall",
-                        msg: JSON.stringify(err),
-                      };
-                      console.log("PROGRESS (ERROR)", jsep, sip.value);
+                      wpDebug().error(
+                        `[WEBPHONE]:Function bootstrap(): onUpdatingCall`,
+                        JSON.stringify(err)
+                      );
                     },
                   });
                 } else if (msg.result?.event === "hangup") {
-                  console.log("HANGUP", jsep, sip.value);
-
                   extenStatus.value = ExtenStatus.IDLE;
                   inCallStatus.value = {
                     inCall: false,
@@ -469,9 +490,11 @@ export function useWebphone(config: WebphoneProps) {
               },
 
               onlocalstream: (stream: any) => {
-                console.log("LOCAL STREAM:   ", stream);
-
                 if (janusOptions.localStreamElement.value) {
+                  wpDebug().log(
+                    `[WEBPHONE]:Function bootstrap(): attaching local stream on`,
+                    janusOptions.localStreamElement.value
+                  );
                   Janus.attachMediaStream(
                     janusOptions.localStreamElement.value,
                     stream
@@ -479,8 +502,11 @@ export function useWebphone(config: WebphoneProps) {
                 }
               },
               onremotestream: (stream: any) => {
-                console.log("REMOTE STREAM:   ", stream);
                 if (janusOptions.remoteStreamElement.value) {
+                  wpDebug().log(
+                    `[WEBPHONE]:Function bootstrap(): Attaching remote stream on`,
+                    janusOptions.remoteStreamElement.value
+                  );
                   Janus.attachMediaStream(
                     janusOptions.remoteStreamElement.value,
                     stream
@@ -488,7 +514,9 @@ export function useWebphone(config: WebphoneProps) {
                 }
               },
               oncleanup: () => {
-                console.log("Got cleanup notification");
+                wpDebug().log(
+                  "[WEBPHONE]:Function bootstrap(): Got cleanup notification"
+                );
               },
               detached: () => {
                 janusStatus.value = JanusStatus.NOT_CONNECTED;
@@ -498,6 +526,9 @@ export function useWebphone(config: WebphoneProps) {
                   status: undefined,
                 };
                 registerStatus.value = RegisterStatus.UNREGISTERED;
+                wpDebug().warn(
+                  `[WEBPHONE]:Function bootstrap(): Plugin detached!`
+                );
               },
               error: (err: any) => {
                 janusStatus.value = JanusStatus.ERROR;
@@ -507,10 +538,10 @@ export function useWebphone(config: WebphoneProps) {
                   status: undefined,
                 };
                 registerStatus.value = RegisterStatus.UNREGISTERED;
-                error.value = {
-                  type: "onJanusAttach",
-                  msg: JSON.stringify(err),
-                };
+                wpDebug().error(
+                  `[WEBPHONE]:Function bootstrap(): on janus plugin attach`,
+                  JSON.stringify(err)
+                );
               },
             });
           },
@@ -523,12 +554,15 @@ export function useWebphone(config: WebphoneProps) {
               status: undefined,
             };
             registerStatus.value = RegisterStatus.UNREGISTERED;
-            error.value = {
-              type: "onJanusRunning",
-              msg: JSON.stringify(err),
-            };
+            wpDebug().error(
+              `[WEBPHONE]:Function bootstrap(): on janus running (destroying)`,
+              JSON.stringify(err)
+            );
           },
           destroyed: () => {
+            wpDebug().warn(
+              `[WEBPHONE]:Function bootstrap(): Janus instance Destroyed!`
+            );
             janusStatus.value = JanusStatus.NOT_CONNECTED;
             extenStatus.value = ExtenStatus.OFFLINE;
             inCallStatus.value = {
@@ -559,16 +593,11 @@ export function useWebphone(config: WebphoneProps) {
       { immediate: true }
     );
 
-    watch(registerStatus, () => {
-      if (registerStatus.value === RegisterStatus.REGISTERED && error.value) {
-        error.value = null;
-      }
-    });
-
     watchEffect(() => {
       if (registerTimer.value >= janusOptions.registerTimeout) {
         clearTimeout(registerTimerId.value);
         registerStatus.value = RegisterStatus.REGISTRATION_FAILED;
+        wpDebug().warn(`[WEBPHONE]:Register event timeout`);
         webphone.value?.destroy();
       }
     });
@@ -590,7 +619,6 @@ export function useWebphone(config: WebphoneProps) {
     sendDTMF,
     register,
     isOnline,
-    error,
     janusStatus,
     registerStatus,
     extenStatus,
