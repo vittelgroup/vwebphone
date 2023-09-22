@@ -368,7 +368,12 @@ export function useWebphone(config: WebphoneProps) {
                 ) {
                   switch (msg.result.event) {
                     case "registered":
-                      extenStatus.value = ExtenStatus.IDLE;
+                      if (
+                        extenStatus.value === ExtenStatus.IDLE ||
+                        extenStatus.value === ExtenStatus.OFFLINE
+                      ) {
+                        extenStatus.value = ExtenStatus.IDLE;
+                      }
                       registerStatus.value = RegisterStatus.REGISTERED;
                       registerTimer.value = 0;
                       break;
