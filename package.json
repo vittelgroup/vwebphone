@@ -1,6 +1,6 @@
 {
   "name": "@vittelgroup/vwebphone",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "",
   "main": "dist/index.js",
   "typings": "dist/types/webphone/useWebphone.d.ts",

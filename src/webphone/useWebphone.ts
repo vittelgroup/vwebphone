@@ -60,6 +60,7 @@ interface InCallStatus {
 
 interface InCallProps {
   inCall: boolean;
+  hangupReason: string;
   status?: InCallStatus;
 }
 
@@ -95,6 +96,7 @@ export function useWebphone(config: WebphoneProps) {
     inCallStatus: ref<InCall>({
       inCall: false,
       status: undefined,
+      hangupReason: "",
     }),
   };
 
@@ -169,6 +171,7 @@ export function useWebphone(config: WebphoneProps) {
           inCallStatus.value = {
             inCall: false,
             status: undefined,
+            hangupReason: "",
           };
           extenStatus.value = ExtenStatus.IDLE;
           const body = { request: "decline", code: 480 };
@@ -403,6 +406,7 @@ export function useWebphone(config: WebphoneProps) {
                   extenStatus.value = ExtenStatus.CALLING;
                   inCallStatus.value = {
                     inCall: true,
+                    hangupReason: "",
                     status: {
                       callDirection: "outgoing",
                       duration: 0,
@@ -424,6 +428,7 @@ export function useWebphone(config: WebphoneProps) {
                   extenStatus.value = ExtenStatus.RECEIVING_CALL;
                   inCallStatus.value = {
                     inCall: true,
+                    hangupReason: "",
                     status: {
                       callDirection: "incoming",
                       duration: 0,
@@ -497,6 +502,7 @@ export function useWebphone(config: WebphoneProps) {
                   inCallStatus.value = {
                     inCall: false,
                     status: undefined,
+                    hangupReason: msg.result?.reason || "",
                   };
                 }
               },
@@ -536,6 +542,7 @@ export function useWebphone(config: WebphoneProps) {
                 inCallStatus.value = {
                   inCall: false,
                   status: undefined,
+                  hangupReason: "",
                 };
                 registerStatus.value = RegisterStatus.UNREGISTERED;
                 wpDebug().warn(
@@ -548,6 +555,7 @@ export function useWebphone(config: WebphoneProps) {
                 inCallStatus.value = {
                   inCall: false,
                   status: undefined,
+                  hangupReason: "",
                 };
                 registerStatus.value = RegisterStatus.UNREGISTERED;
                 wpDebug().error(
@@ -564,6 +572,7 @@ export function useWebphone(config: WebphoneProps) {
             inCallStatus.value = {
               inCall: false,
               status: undefined,
+              hangupReason: "",
             };
             registerStatus.value = RegisterStatus.UNREGISTERED;
             wpDebug().error(
@@ -580,6 +589,7 @@ export function useWebphone(config: WebphoneProps) {
             inCallStatus.value = {
               inCall: false,
               status: undefined,
+              hangupReason: "",
             };
             if (registerStatus.value !== RegisterStatus.REGISTRATION_FAILED) {
               registerStatus.value = RegisterStatus.UNREGISTERED;
