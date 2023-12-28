@@ -241,6 +241,7 @@ export function useWebphone(config: WebphoneProps) {
           proxy: `sip:${domain}:${port}`,
         },
       });
+      clearTimeout(registerTimerId.value);
       registerTimerStart();
       authenticatedExtension.value = authuser;
       authenticatedDomain.value = domain;
