@@ -40,7 +40,6 @@ const { hangup,
   toggleMute,
   sendDTMF,
   register,
-  error,
   janusStatus,
   registerStatus,
   extenStatus,
@@ -133,13 +132,6 @@ watch(janusStatus, () => {
           ramalStatus[extenStatus] || 'Desconectado' }}</span>
 
       </div>
-    </div>
-    <div
-      class="mt-5 flex justify-start flex-row sm:mt-0 px-2 space-x-1divide-gray-200 border-t border-gray-200 py-2 bg-red-500"
-      v-show="error !== null">
-      <span class="text-gray-900 font-bold">{{ error?.type }}</span>
-      {{ ' ' }}
-      <span class="text-gray-900">{{ error?.msg }}</span>
     </div>
   </div>
 

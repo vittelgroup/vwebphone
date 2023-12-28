@@ -618,6 +618,7 @@ export function useWebphone(config: WebphoneProps) {
     watchEffect(() => {
       if (registerTimer.value >= janusOptions.registerTimeout) {
         clearTimeout(registerTimerId.value);
+        registerTimer.value = 0;
         registerStatus.value = RegisterStatus.REGISTRATION_FAILED;
         wpDebug().warn(`[WEBPHONE]:Register event timeout`);
         webphone.value?.destroy();
