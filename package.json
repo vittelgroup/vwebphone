@@ -1,6 +1,6 @@
 {
   "name": "@vittelgroup/vwebphone",
-  "version": "1.2.5",
+  "version": "1.2.6",
   "description": "",
   "main": "dist/index.js",
   "typings": "dist/types/webphone/useWebphone.d.ts",
@@ -12,6 +12,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "nanoid": "^5.0.4",
     "vue": "^3.2.47",
     "webrtc-adapter": "^7.7.1"
   },

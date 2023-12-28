@@ -9,6 +9,7 @@ import {
 } from "vue";
 import Janus from "../lib/janus";
 import type { JanusJS } from "../lib/janus";
+import { nanoid } from "nanoid";
 interface WebphoneProps {
   janusServer: string;
   janusPort: number;
@@ -74,7 +75,7 @@ type InCall = InCallProps;
  * @returns {Object} - Object with webphone functions and status properties
  */
 export function useWebphone(config: WebphoneProps) {
-  const opaqueId = ref(crypto.randomUUID());
+  const opaqueId = ref(nanoid(16));
   const error = ref<null | { type: string; msg: string }>(null);
   const isOnline = ref(window.navigator.onLine);
   const talkingNumber = ref<null | string>(null);
@@ -411,7 +412,7 @@ export function useWebphone(config: WebphoneProps) {
                     status: {
                       callDirection: "outgoing",
                       duration: 0,
-                      incallId: crypto.randomUUID(),
+                      incallId: nanoid(16),
                       muted: false,
                       number: number,
                       onHold: false,
@@ -433,7 +434,7 @@ export function useWebphone(config: WebphoneProps) {
                     status: {
                       callDirection: "incoming",
                       duration: 0,
-                      incallId: crypto.randomUUID(),
+                      incallId: nanoid(16),
                       muted: false,
                       number,
                       onHold: false,
